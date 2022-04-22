@@ -62,7 +62,6 @@ class Helpers():
 
     json_report = {"findings": {}}
 
-    #raw_report_file = open("report.txt", "a")
     raw_json_report = {"raw_report": {}}
     raw_data = ""
     # Magic byte regular expressions:
@@ -78,7 +77,6 @@ class Helpers():
     MICROSOFT_OFFICE_WORD = b'\x4d\x69\x63\x72\x6f\x73\x6f\x66\x74\x20\x4f\x66\x66\x69\x63\x65\x20\x57\x6f\x72\x64'
     OLE_FILE_MAGIC = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
     EQ_EDIT_CLSID_RE = rb'\x02\xce\x02\x00\x00\x00\x00\x00\xc0\x00\x00\x00\x00\x00\x00\x46'
-    # EQ_EDIT_CLSID_RE = rb'\x02\xce\x02\x00\x00\x00\x00\x00\xc0\x00\x00\x00\x00\x00\x00F'
     EQUATION_EDITOR_RE = rb'\x4d\x69\x63\x72\x6f\x73\x6f\x66\x74\x20\x45\x71\x75\x61\x74\x69\x6f\x6e\x20\x33\x2e\x30'
     equation_regex = r'[[e|E][q|Q][u|U][a|A][t|T][i|I][o|O][n|N]]{8}'
     equation_byte_regex = rb'[\x65\x45\x71\x51\x75\x55\x61\x41\x74\x54\x69\x49\x6F\x4F\x6E\x4E]{8}'
@@ -192,19 +190,15 @@ class Helpers():
         # https://www.garykessler.net/library/file_sigs.html
         try:
             if self.OLE == data[:len(self.OLE)]:
-                # #print("[+] Mime type: Object Linking and Embedding (OLE) Compound File (CF)")
                 helpers.raw_data += "[+] Mime type: Object Linking and Embedding (OLE) Compound File (CF)\n"
                 return "ole"
             elif self.OOXML == data[:len(self.OOXML)]:
-                # #print("[+] Mime type: Microsoft Office Open XML Format (OOXML) Document")
                 helpers.raw_data += "[+] Mime type: Microsoft Office Open XML Format (OOXML) Document\n"
                 return "ooxml"
             elif self.RTF == data[:len(self.RTF)]:
-                # #print("[+] Mime type: RTF (Rich text format) word processing file - \"{\\rtf\"")
                 helpers.raw_data += "[+] Mime type: RTF (Rich text format) word processing file - \"{\\rtf\"\n"
                 return "rtf"
             elif self.PDF == data[:len(self.PDF)]:
-                # #print("[+] Mime type: PDF document - \"%PDF-1.x\"")
                 helpers.raw_data += "[+] Mime type: PDF document - \"%PDF-1.x\"\n"
                 return "pdf"
         except TypeError:
@@ -215,18 +209,15 @@ class Helpers():
         Scans an OLE object to identify its type using the CLSIDS dictionary
 
         """
-        # #print("[+] Attempting to determine the object type")
         helpers.raw_data += "[+] Attempting to determine the object type\n"
 
         for clsid in self.CLSIDS:
             if re.findall(clsid, data):
                 try:
                     print_string = "Object type: %s" % self.CLSIDS[clsid]
-                    # #print(print_string)
                     helpers.raw_data += print_string
                     helpers.raw_data += "\n"
                 except Exception:
-                    # #print("[+] Object type: %s" % self.CLSIDS[clsid])
                     print_string = "Object type: %s" % self.CLSIDS[clsid]
                     helpers.raw_data += print_string
                     helpers.raw_data += "\n"
@@ -646,9 +637,6 @@ class OLEParser:
         cfb_table = BeautifulTable(maxwidth=100)
         cfb_table.headers = (["Field", "Value"])
 
-        #print("\nCFB (compound file binary) Header:")
-        #print("=" * len("CFB (compound file binary) Header:"))
-
         # Carve CFB header magic bytes from data.
         cfb_header = data[:8]
         cfb_table.rows.append(["CFB Header magic", cfb_header])
@@ -656,7 +644,6 @@ class OLEParser:
         # Parse CFB header minor version
         cfb_minor_version = data[24:26]
         if str(binascii.hexlify(cfb_minor_version)) == "3E00":
-            #print("   CFB Minor Version: (Version 3E / 0x3E)", cfb_minor_version)
             cfb_table.rows.append(["CFB Minor Version", "Version 3E / 0x3E)" + str(cfb_minor_version)])
 
         # Parse CFB header major version
@@ -670,7 +657,6 @@ class OLEParser:
         # Parse CFB sector size.
         sector_size = data[30:32]
         if sector_size == b'\x09\x00':
-            # remainder = data[32:512]  # in major version 3.
             cfb_table.rows.append(["CFB sector length", "512 bytes"])
             cfb_table.rows.append(["CFB sector remainder size", "480 bytes - in major version 3 (512 -32)"])
 
@@ -697,22 +683,14 @@ class OLEParser:
         try:
             # Parse input file as OLE to analyze its streams/storages.
             ole = olefile.OleFileIO(fname)
-            # #print("=" * (len(stream_name)+34))
-            # #print("Analyzing streams in OLE file: %s" % stream_name)
-            # #print("=" * (len(stream_name)+34))
 
             # Read input file data.
             file_data = open(fname, "rb").read()
 
             # Iterate over each stream in the OLE file.
             for stream in ole.listdir():
-                # #print("\n[bw]Analyzing stream: %s@" % "\\".join(stream))
-                # #print("=" * (len("\\".join(stream))+18))
-
                 # Check if document is protected.
                 if 'StrongEncryptionDataSpace' in stream or "Encryption" in stream or "EncryptedPackage" in stream:
-                    #print("[!] Document is protected.\n[+] Starting decryption function.")
-                    # Attempt decryption using known default password "VelvetSweatShop".
                     self.decrypt_cdfv2(helpers, fname)
 
                 # Open current stream and read its data.
@@ -733,7 +711,6 @@ class OLEParser:
 
                         if decompressed == 0:
                             # Nothing was decompressed, no VBA macros in stream.
-
                             # Ignore default/special streams.
                             if "CompObj" not in s and "Summary" not in s:
                                 # Create temp file for analysis.
@@ -744,19 +721,13 @@ class OLEParser:
                                 # Extract strings from stream.
                                 self.extract_unicode_and_ascii_string(helpers, s, stream_data)
 
-                                # Close and remove temp file.
-                                #f.close()
-                                #os.remove(f.name)
                         else:
                             # VBA macros were detected.
-                            # #print("\n[+] VBA Macros Detected:")
-
                             # VBA macros output filename.
                             outfile_name = s + "_vbamacros"
 
                             # Prepare content for printing and tables.
-                            print_string = "Found VBA macros in stream \'%s\'@\nSaving VBA macros from to file: %s\n---------\n%s" \
-                                           % (str("\\".join(stream)), outfile_name, decompressed)
+                            print_string = "Found VBA macros in stream \'%s\'@\n---------\n%s" % (str("\\".join(stream)), decompressed)
                             helpers.raw_data += print_string
                             helpers.raw_data += "\n"
 
@@ -764,12 +735,6 @@ class OLEParser:
                             str(stream_name), str("\\".join(stream)))
                             helpers.raw_data += summary_string
                             helpers.raw_data += "\n"
-
-                            # Print VBA indication for static analysis report.
-                            # #print(summary_string)
-
-                            # Print VBA macros.
-                            # #print(decompressed)
 
                             # Scan macros code against known function names and keywords.
                             helpers.find_susp_functions_vba(helpers, stream, decompressed)
@@ -780,27 +745,12 @@ class OLEParser:
                             # Add indication to analysis report stream table.
                             stream_table.rows.append([str("\\".join(stream)), print_string])
 
-                            # Write VBA macro to output file.
-                            #try:
-                            #    with open(outfile_name, "x") as vba_out_file:
-                            #        vba_out_file.write(decompressed)
-                            #        vba_out_file.close()
-                            #except OSError:
-                            #    pass
                     else:
                         continue
             stream_table.columns.alignment = BeautifulTable.ALIGN_LEFT
             helpers.raw_data += str(stream_table)
-            # #print(stream_table)
 
-        except OSError as e:
-            # #print("[-] %s: %s@" % (fname, e))
-            # #print("[-] Failed parsing OLE object (fragmented/corrupted)@")
-            # #print("[-] Indicates that an OLE file header was parsed but the data is fragmented and was not fully "
-            #       "constructed@")
-            # #print("[-] If you didn\'t see the CFB (Compound File Binary) header parsed prior to this error "
-            #       "- not an OLE file. ***@")
-            # helpers.add_summary_if_no_duplicates()
+        except OSError:
             pass
 
     def eqnedt32_detect(self, helpers, stream, stream_data, file_data):
@@ -868,8 +818,6 @@ class OLEParser:
         # ASCII string matches.
         ascii_matches = re.findall(helpers.ascii_regex, data)
 
-        # #print("\n\n[+] Decoded UNICODE bytes from stream:")
-
         # Join all strings into one string.
         for match in unicode_matches:
             unicode_final_decoded += match.decode('utf-8')
@@ -879,14 +827,6 @@ class OLEParser:
         # split strings properly.
         splitted_strings = unicode_final_decoded.split(" ")
 
-        # print strings.
-        # for str in splitted_strings:
-        # #print(str)
-
-        # #print("\n[+] Decoded ASCII bytes from stream:")
-        #f = open("data.txt", "a")
-
-        # print strings.
         for match in ascii_matches:
             ascii_final_decoded += match.decode('utf-8')
             helpers.raw_data += match.decode('utf-8')
@@ -895,16 +835,9 @@ class OLEParser:
             if len(match.decode('utf-8')) > 8:
 
                 if len(match) > 500:
-                    # if string is long, write it to a file.
-                    #f.write(match.decode('utf-8'))
-                    # #print(match.decode('utf-8')[:50])
                     helpers.search_indicators_in_string(helpers, filename, match.decode('utf-8')[:1000])
-
                 else:
-                    # #print(match.decode('utf-8'))
                     helpers.search_indicators_in_string(helpers, filename, match.decode('utf-8'))
-        #f.close()
-
         # Print final ASCII strings.
         if len(ascii_final_decoded) > 2000:
             helpers.raw_data += ascii_final_decoded[:1000]
@@ -939,7 +872,6 @@ class OLEParser:
             WORD_DOCUMENT = b'\x57\x6F\x72\x64\x2E\x44\x6F\x63\x75\x6D\x65\x6E\x74'
 
             if re.findall(ole_regex, stream_data):
-                # #print("\n\n[!!!] Found OLE file %s!" % str("\\".join(stream)))
                 helpers.raw_data += "\n\n[!!!] Found OLE file %s!\n" % str("\\".join(stream))
                 summary_string = "Found OLE file %s\n" % str("\\".join(stream))
                 summary_desc = "Embedded OLE file\n%s" % str("\\".join(stream))
@@ -957,20 +889,16 @@ class OLEParser:
                         xls_parser = XLSParser(stream_data)
                         xls_parser.parse_boundsheet_record(helpers, stream_data)
                         xls_parser.parse_bof_records(helpers, stream_data)
-                        #xls_parser.unhide_sheets(f.name)
-                        # ms_ole.extract_strings(data)
                         xls_parser.extract_sheets(helpers, f.name)
                         decompress_obj = VBADecompress(stream_data)
                         decompressed = decompress_obj.SearchAndDecompress(stream_data)
                         xls_parser.parse_sst(helpers, stream_data)
                         f.close()
                         os.remove(f.name)
-                        # #print("\n\n[bc>][+] Continuing original file analysis:@\n" + "=" * 50)
                         helpers.raw_data += "\n\n[+] Continuing original file analysis:\n" + ("=" * 50) + "\n"
 
                     elif MICROSOFT_OFFICE_WORD in stream_data or WORD_DOCUMENT in stream_data:
                         doc_parser = DocParser(stream_data)
-                        # #print("\n\n[bc>][+] Continuing original file analysis:@\n" + "=" * 50)
                         helpers.raw_data += "\n\n[+] Continuing original file analysis:\n" + ("=" * 50) + "\n"
                         pass
         else:
@@ -986,17 +914,11 @@ class OLEParser:
 
         try:
             file.decrypt(open(decrypted_outfile, "wb"))
-            # #print("Used default password: VelvetSweatshop\n    Saved decrypted document to file: %s@\n"
-            #      "Please check the decrypted file, rerun the tool and use the decrypted file" % decrypted_outfile)
-
             helpers.raw_data += "Used default password: VelvetSweatshop\n"
             helpers.raw_data += "Saved decrypted document to file: %s\n" % decrypted_outfile
             helpers.raw_data += "Please check the decrypted file, rerun the tool and use the decrypted file\n"
-
-            # return decrypted_outfile
             exit(0)
         except msoffcrypto.exceptions.InvalidKeyError:
-            # #print("[-] Could not decrypt protected document - password is not the default...\nRun the document in a sandbox")
             helpers.raw_data += "[-] Could not decrypt protected document - password is not the default...\nRun the document in a sandbox"
             exit(0)
             return
@@ -1138,7 +1060,6 @@ class XLSParser:
                     end_offset = end_of_bof.end() + bof_offset_record_end
 
                 # After BoF chunk start and end offsets are calculated, the BoF record is parsed
-                # #print("\nBOF (Beginning of File) record:")
                 helpers.raw_data += "\nBOF (Beginning of File) record:\n"
 
                 # Add record offset as new row to final summary table.
@@ -1175,10 +1096,7 @@ class XLSParser:
                 # Clear table for next record.
                 bof_table.clear()
 
-                # #print(hexdump.hexdump(data[bof_offset_record_end -12: (bof_offset_record_end -12) + 100]))
-
             else:
-                # #print("failed getting BOF header location, fix regex...")
                 helpers.raw_data += "failed getting BOF header location, fix regex...\n"
 
     def parse_bof_records(self, helpers, data):
@@ -1189,34 +1107,26 @@ class XLSParser:
         For each record it will print a table showing the record fields/values.
 
         """
-        # #print("\nBOF (Beginging of File) Records@\n" + "=" * 30)
         helpers.raw_data += "\nBOF (Begining of File) Records\n" + ("=" * 30) + "\n"
-        # #print("\nBase BOF (Begginging of File) record:")
         helpers.raw_data += "\nBase BOF (Begining of File) record:\n"
 
         # create BoF table
         bof_table = BeautifulTable(maxwidth=100)
 
         # Parse base BoF record, return list of all other records.
-        # position = base BoF record offset.
-        # bof_headers = Bof records list (without base record).
         bof_headers, position = self.parse_base_bof_record(helpers, data, bof_table)
 
         # Prepare BoF table and print it.
         bof_table.columns.alignment = BeautifulTable.ALIGN_LEFT
 
-        # Print BoF table for current record.
-        # #print(bof_table)
+        # BoF table for current record.
         helpers.raw_data += str(bof_table)
-        #helpers.raw_data += bof_table)
 
         # Clear the table for next BoF record.
         bof_table.clear()
 
         # After parsing the base BoF record, proceed to parsing all the rest.
         # The base BoF record offset is used to calculate offsets of following records.
-        # position = base BoF record offset.
-        # bof_headers = Bof records list (without base record).
         self.parse_rest_of_bofs(helpers, data, bof_table, bof_headers, position)
 
     def check_biff_version(self, helpers, biff_version_bytes, bof_table):
@@ -1319,7 +1229,6 @@ class XLSParser:
 
         # Create sheets table.
         sheets_table = BeautifulTable(maxwidth=100)
-        # sheets_table.column_headers = ([])
 
         # Extract all BOUNDSHEET records.
         regex = re.compile(helpers.BOUNDHSEET_RECORD)
@@ -1404,8 +1313,6 @@ class XLSParser:
                 # Next sheet start offset is the end of the current sheet
                 next_sheet_offset = final_next_record
 
-            # print boundsheet_record table:
-            # #print("\nSheet Name: \'%s\'@" % str(sheet_name))
             helpers.raw_data += "\nSheet Name: \'%s\'\n" % str(sheet_name)
 
             # Parse base BoF record offset
@@ -1437,7 +1344,6 @@ class XLSParser:
 
             # Prepare sheets table before printing.
             sheets_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-            # #print(sheets_table)
             helpers.raw_data += str(sheets_table)
             helpers.raw_data += "\n"
 
@@ -1474,10 +1380,7 @@ class XLSParser:
             helpers.raw_data += "\nStrings from sheets:" + "\n" + ("=" * 20) + "\n"
 
             for i in range(0, len(book.sheets())):
-                # #print("\nSheet name: \"%s\"@" % str(book.sheet_by_index(i).name))
                 helpers.raw_data += "\nSheet name: \"%s\"\n" % str(book.sheet_by_index(i).name)
-                # #print("-" * 20)
-                # #print("[+] Searching Excel 4.0 Macros (XLM) in sheet cells\n")
                 helpers.raw_data += "[+] Searching Excel 4.0 Macros (XLM) in sheet cells\n"
 
                 # Print non-empty cells.
@@ -1488,11 +1391,9 @@ class XLSParser:
                         if cell_obj.value is '':
                             continue
                         else:
-                            # #print(cell_obj.value)
                             helpers.raw_data += str(cell_obj.value)
                             helpers.raw_data += "\n"
 
-                # #print("\n[+] Extracting generic strings from sheet: %s@\n" % str(book.sheet_by_index(i).name))
                 helpers.raw_data += "\n[+] Extracting generic strings from sheet: %s\n" % str(book.sheet_by_index(i).name)
 
                 # strings implementation in python
@@ -1502,13 +1403,11 @@ class XLSParser:
                 # Print each string and scan it against known keywords/indicators.
                 for s in sl:
                     if len(s) > 15:
-                        # #print(s)
                         helpers.raw_data += s
                         helpers.raw_data += "\n"
                         helpers.search_indicators_in_string(helpers, fname, s)
 
         except IndexError as e:
-            # #print("\n[-] For some reason, failed to read data from the Excel sheets (\"xlrd.open_workbook(fname)\")....\n")
             helpers.raw_data += "\n[-] For some reason, failed to read data from the Excel sheets (\"xlrd.open_workbook(fname)\")....\n"
             pass
 
@@ -1552,8 +1451,6 @@ class XLSParser:
 
                 xls_file.seek(loc + 8)
                 sheet_name = self.carve_sheet_name(helpers, data, record)
-                # #print("Sheet: \"%s\" - Patching file at offset %s with \\x00 byte. Patched XLS file: %s"
-                #      % (str(sheet_name), str(hex(loc + 8)), patched_name))
                 helpers.raw_data += "Sheet: \"%s\" - Patching file at offset %s with \\x00 byte. Patched XLS file: %s" \
                                          % (str(sheet_name), str(hex(loc + 8)), patched_name)
                 patched_file.write(b'\x00')
@@ -1599,7 +1496,6 @@ class XLSParser:
          00021344H           001CH           0000H       Not used
         """
 
-        # #print("\nShared String Table (SST):")
         helpers.raw_data += "\nShared String Table (SST):\n"
 
         sst_table = BeautifulTable(maxwidth=100)
@@ -1624,18 +1520,15 @@ class XLSParser:
             test = sst_chunk[:3]
 
             sst_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-            # #print(sst_table)
             helpers.raw_data += str(sst_table)
 
             try:
                 str_length = struct.unpack("<hb", test)[0]
 
-                # #print("Length of first string: %d" % str_length)
                 helpers.raw_data += "Length of first string: %d" % str_length
                 helpers.raw_data += "\n"
                 first_string = sst_chunk[3:3 + str_length]
                 try:
-                    # #print(first_string.decode('utf-8'))
                     helpers.raw_data += first_string.decode('utf-8')
                     helpers.raw_data += "\n"
 
@@ -1653,13 +1546,11 @@ class XLSParser:
                         test = sst_chunk[offset:offset + 3]
                         str_length = struct.unpack("<hb", test)[0]
 
-                        # #print("String Length: %d" % str_length)
                         helpers.raw_data += "String Length: %d" % str_length
                         helpers.raw_data += "\n"
 
                         string = sst_chunk[offset + 3:offset + str_length + 3]
                         try:
-                            # #print(string.decode('utf-8'))
                             helpers.raw_data += string.decode('utf-8')
                             helpers.raw_data += "\n"
 
@@ -1672,7 +1563,6 @@ class XLSParser:
             except struct.error:
                 return 0
         else:
-            # #print("[-] Couldn't find a valid Shared Strings Table...")
             helpers.raw_data += "[-] Couldn't find a valid Shared Strings Table...\n"
 
 
@@ -1709,8 +1599,6 @@ class OOXMLParser:
         zip = zipfile.ZipFile(filename)
         zip.extractall(extract_path)
 
-        #zip = ZipFile(BytesIO(resp.read()))
-
         if helpers.my_os == "Windows":
             path = ".\\" + extract_path
         else:
@@ -1729,16 +1617,9 @@ class OOXMLParser:
         return files
 
     def detect_emb_ole(self, helpers, data, filename):
-
-        # ms_ole = OLE_Parser(data)
-        # emb_ole_files = re.findall(self.OLE_FILE_MAGIC, data)
-
+       
         files = self.list_archive_files(helpers, data, filename)
-
-        # #print("\nOOXML Archive files:")
         helpers.raw_data += "\nOOXML Archive files:\n"
-        # #print("=" * len("OOXML Archive files:"))
-        #helpers.raw_data += "=" * len("OOXML Archive files:")
         for f in files:
             #print(f.replace(".\\unzipped", ""))
             helpers.raw_data += str(f.replace(".\\unzipped", ""))
@@ -1751,10 +1632,7 @@ class OOXMLParser:
             else:
                 continue
 
-        ##print("\nAnalyzing files in archive")
         helpers.raw_data += "\nAnalyzing files in archive\n"
-        ##print("=" * len("Analyzing files in archive:"))
-        #helpers.raw_data += "=" * len("Analyzing files in archive:")
         indicators = BeautifulTable()
         indicators.headers = ["Indication", "Description"]
         indicators.columns.width = [50, 70]
@@ -1767,7 +1645,6 @@ class OOXMLParser:
             if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
                 ms_ole = OLEParser(data)
                 self.parse_ole_file(helpers, file_data, file)
-                # ms_ole.parse_cfb_header(file, file_data)
                 ms_ole.extract_embedded_ole(helpers, file, file)
 
             if ".rels" in file:
@@ -1803,7 +1680,6 @@ class OOXMLParser:
                         helpers.add_summary_if_no_duplicates(print_line, frame)
 
                 except UnicodeDecodeError as e:
-                    #print("[-] Error reading %s: %s" % (str(file), str(e)))
                     helpers.raw_data += "[-] Error reading %s: %s\n" % (str(file), str(e))
                     continue
 
@@ -1823,8 +1699,6 @@ class OOXMLParser:
                         helpers.add_summary_if_no_duplicates(print_line, possible_payload[:100])
 
                 except UnicodeDecodeError as e:
-                    #print("[-] Error reading %s: %s" % (str(file), str(e)))
-
                     continue
 
             if "macrosheets" in file or "worksheets" in file:
@@ -1839,14 +1713,11 @@ class OOXMLParser:
             file_handle.close()
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
-        #print(indicators)
         helpers.raw_data += str(indicators)
 
 
     def find_ext_references(self, helpers, data, filename):
 
-        # Target=\"(.*)</Relationship.*TargetMode="External"
-        # .*TargetMode=\"External\" Target=\"(.*)\".*
         mshtml = re.findall(r'oleObject\" Target=\"mhtml:.*TargetMode=\"External\"', data)
         ext_template = re.findall(r'attachedTemplate\" Target=\"http.*TargetMode=\"External\"', data)
         hyperlinks = re.findall(r'hyperlink\" Target=\".*\"\ TargetMode=\"External\"', data)
@@ -1854,7 +1725,6 @@ class OOXMLParser:
 
         if mshtml:
             mshtml_string = str(", ".join(mshtml))
-            # #print("\n[!] Found Possible MSHTML abuse in file:@ %s" % filename)
             summary_string = "Found Possible MSHTML abuse in file: %s" % filename.replace("\\unzipped", "")
             helpers.raw_data += summary_string + " " + mshtml_string
             helpers.add_summary_if_no_duplicates(summary_string, mshtml_string)
@@ -1862,7 +1732,6 @@ class OOXMLParser:
 
         if ext_template:
             reference = str(", ".join(ext_template))
-            # #print("\nFound external relationship in file:@ %s -- %s" % (filename, reference))
             if helpers.my_os == "Windows":
                 summary_string = "Found external relationship to OLE object in file: %s" % filename.replace("\\unzipped", "")
                 helpers.raw_data += summary_string + " " + reference
@@ -1874,7 +1743,6 @@ class OOXMLParser:
 
         if hyperlinks:
             links = str(", ".join(hyperlinks))
-            # #print("\n[!] Found hyperlinks in file:@ %s" % filename)
             summary_string = "Found hyperlinks in file: %s" % filename.replace("\\unzipped", "")
             helpers.raw_data += summary_string + " " + links
             helpers.add_summary_if_no_duplicates(summary_string, links)
@@ -1892,10 +1760,7 @@ class OOXMLParser:
         # <t>(.*)</t>
         shared_strings = re.findall('<t>(.*)</t>', data)
         if shared_strings:
-            #print("\n[+] Shared strings table found in file: %s" % filename)
             helpers.raw_data += "\n[+] Shared strings table found in file: %s\n%s\n" % (filename, str(shared_strings))
-            #for string in shared_strings:
-            #    print(string)
         else:
             pass
 
@@ -1941,7 +1806,6 @@ class OOXMLParser:
         DDE_PATTERN = "DDEAUTO.*|INCLUDE.*"
 
         dde = re.findall(DDE_PATTERN, data)
-        # dde_command = []
         if dde:
 
             if ".xml" in filename:
@@ -1987,10 +1851,7 @@ class OOXML_Excel(OOXMLParser):
 
     def read_sheets(self, helpers, filename, read_macros=True):
 
-        ##print("\nReading Excel sheets:")
         helpers.raw_data += "\nReading Excel sheets:\n"
-        ##print("=" * len("Reading Excel sheets:"))
-        #helpers.raw_data += "=" * len("Reading Excel sheets:")
         path = self.zip_extrcat(helpers, filename)
         sheets_dir = path + "\\xl\\worksheets"
         sheet_types = ["worksheet"]
@@ -2007,7 +1868,6 @@ class OOXML_Excel(OOXMLParser):
 
             if type == "macrosheets":
                 self.sheet_cells.columns.alignment = BeautifulTable.ALIGN_LEFT
-                # #print(self.sheet_cells)
                 helpers.raw_data += str(self.sheet_cells)
                 helpers.raw_data += "\n"
                 self.sheet_cells.clear()
@@ -2015,7 +1875,6 @@ class OOXML_Excel(OOXMLParser):
                 sheets = macros_sheets
                 self.print_cells(helpers, filename, sheets)
                 self.sheet_cells.columns.alignments = BeautifulTable.ALIGN_LEFT
-                # #print(self.sheet_cells)
                 helpers.raw_data += str(self.sheet_cells)
 
                 break
@@ -2028,7 +1887,6 @@ class OOXML_Excel(OOXMLParser):
             if ".xml" in sheet:
                 tree = ET.parse(sheet)
                 root = tree.getroot()
-                #print("[+] Sheet: %s" % sheet)
                 helpers.raw_data += "[+] Sheet: %s\n" % sheet
                 for child in root:
                     m = filter(self.inline_cell(helpers, filename, child, self.sheet_cells), root)
@@ -2068,20 +1926,16 @@ class OOXML_Excel(OOXMLParser):
                     continue
 
                 sheet_binary_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-                # #print("\nSheet name: %s" % sheet_name)
                 helpers.raw_data += "\nSheet name: %s\n" % sheet_name
-                # #print(sheet_binary_table)
                 helpers.raw_data += str(sheet_binary_table)
                 helpers.raw_data += "\n"
 
             self.print_binary_sst(file, sst_table)
 
     def print_binary_sst(self, helpers, file, sst_table):
-        #print("Shared Strings Table (SST):")
         with open_xlsb(file) as wb:
             sst_table.rows.append(["Shared Strings Table", " , ".join(wb.stringtable._strings)])
             sst_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-            # #print(sst_table)
             helpers.raw_data += str(sst_table)
 
     # def list_contents(self, helpers, filename):
@@ -2214,9 +2068,7 @@ class RTF:
                     f = open(filename, "w+b")
                     f.write(obj_data)
 
-                    # #print("\n[!] Found \'d0cf11e0\' magic in the RTF file contents")
                     helpers.raw_data += "\n[!] Found \'d0cf11e0\' magic in the RTF file contents\n"
-                    # #print("[+] Saved OLE file contents to: %s@" % f.name)
                     helpers.raw_data += "[+] Saved OLE file contents to: %s\n" % f.name
 
                     # Add indication of OLE magic bytes to final summary table.
@@ -2227,11 +2079,7 @@ class RTF:
                     f.close()
 
                     # Start of OLE recursive static analysis.
-                    # #print("\n" + ("=" * len("Starting analysis on OLE object")))
-                    #helpers.raw_data += "\n" + ("=" * len("Starting analysis on OLE object")))
-                    # #print("Starting analysis on OLE object")
                     helpers.raw_data += "Starting analysis on OLE object\n"
-                    # #print("=" * len("Starting analysis on OLE object"))
                     helpers.raw_data += "Starting analysis on OLE object\n"
 
                     # Run OLEParser() methods on object.
@@ -2292,7 +2140,6 @@ class RTF:
                                 auxiliary_used = True
 
                                 # Use auxiliary regex to find hex blobs.
-                                # #print("Using auxiliary regex to find data blobs...")
                                 helpers.raw_data += "Using auxiliary regex to find data blobs...\n"
                                 aux_regex = rb"[A-Z]\}([\x00-\x66]+)\{\\|[A-Z]\}|[a-z]([\x00-\x66]+)"
                                 aux_matches = re.findall(aux_regex, data)
@@ -2316,9 +2163,6 @@ class RTF:
                                                     # Unhexlify hex data as lowercase.
                                                     blob_data = binascii.unhexlify(m)
                                                 except binascii.Error:
-                                                    # #print("\n[-] binascii error: hex data length is not an even "
-                                                    #      "number... probably missing a character to make data hex "
-                                                    #      "readable.")
                                                     helpers.raw_data += "Using auxiliary regex to find data blobs...\n"
 
                                                     # Print blob data anyway.
@@ -2370,11 +2214,6 @@ class RTF:
         Blobs that were identified as OLE files will be processed using the OLEParser() class.
 
         """
-        # Print hex view of the blob data.
-        # #print(hexdump.hexdump(data))
-        #helpers.raw_data += str(hexdump.hexdump(data))
-        #helpers.raw_data += "\n"
-
         # Initiate the OLEParser() class with the blob data.
         ms_ole = OLEParser(data)
 
@@ -2408,7 +2247,6 @@ class RTF:
             f = open(filename, "w+b")
         f.write(data)
         f.close()
-        # os.remove(f.name)
 
     """
     def disassembly(self, helpers, data):
@@ -2447,11 +2285,6 @@ class RTF:
                 unified = summary_string + summary_desc
                 helpers.raw_data += unified
 
-        #    if equation1:
-        #        summary_desc = "Found \'%s\' in binary data stream" % equation1
-
-        #    helpers.add_summary_if_no_duplicates(summary_string, summary_desc)
-
 
 class PDF:
     """
@@ -2477,7 +2310,6 @@ class PDF:
         obj_table.headers = (["Object", "Type"])
         obj_table.rows.append(["Object", "Type"])
 
-        #print("\n[+] Enumerating PDF objects")
         helpers.raw_data += "\n[+] Enumerating PDF objects\n"
         # Extract all objects to a list for later processing
         objects = re.findall(helpers.obj_regex, data)
@@ -2487,7 +2319,6 @@ class PDF:
 
         # The previous function populated the objects table, no print it to the terminal
         obj_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-        #print(str(obj_table))
         helpers.raw_data += str(obj_table)
 
         # Loop over all objects. Each "obj" the object binary string (b'').
@@ -2499,32 +2330,25 @@ class PDF:
 
             # Carve the object number from the object binary string.
             obj_num_bin = obj[:2]
-            ##print("\n\nObject %s:" % obj_num_bin)
             helpers.raw_data += "\n\nObject %s:\n" % obj_num_bin
-            ##print("=" * len("Object %s:" % obj_num_bin))
             helpers.raw_data += "=" * len("Object %s:" % obj_num_bin)
             helpers.raw_data += "\n"
-            ##print("[+] Readable object (first 1,000 bytes):\n")
             helpers.raw_data += "[+] Readable object (first 1,000 bytes):\n"
 
             # Check obj size before printing to avoid overflowing the terminal
             if len(readable_obj) > 1000:
-                #print(readable_obj[:1000])
 
                 try:
                     helpers.raw_data += readable_obj[:1000]
                     helpers.raw_data += "\n"
                 except UnicodeError as e:
-                    ##print(e)
                     pass
 
             else:
-                #print(readable_obj)
                 try:
                     helpers.raw_data += str(readable_obj)
                     helpers.raw_data += "\n"
                 except UnicodeError as e:
-                    #print(e)
                     helpers.raw_data += str(e)
                     helpers.raw_data += "\n"
 
@@ -2536,7 +2360,6 @@ class PDF:
             # summary table.
             for uri in uris:
 
-                #print("[+] Found URI in object %s:\n%s" % (obj_num_bin, uri.decode('utf-8')))
                 helpers.raw_data += "[+] Found URI in object %s:\n%s\n" % (obj_num_bin, uri.decode('utf-8'))
                 summary_string = ("Found URI in object %s:@" % obj_num_bin)
                 summary_desc = "%s" % uri.decode('utf-8')
@@ -2548,7 +2371,6 @@ class PDF:
             # summary table.
             for emb_file in emb_files:
 
-                #print("\n[+] Found embedded file in object %s:\n%s" % (obj_num_bin, emb_file.decode('utf-8')))
                 helpers.raw_data += "\n[+] Found embedded file in object %s:\n%s\n" % (obj_num_bin, emb_file.decode('utf-8'))
                 summary_string = "Found embedded file in object %s:" % obj_num_bin
                 summary_desc = "%s" % emb_file.decode('utf-8')
@@ -2560,7 +2382,6 @@ class PDF:
             # If there are any /ObjStm in the document, it will enter the for loop to log it and add it to the
             # summary table.
             for stm in obj_stm:
-                #print("\n[+] Found object stream (ObjStm) in object %s:\n%s" % (obj_num_bin, stm.decode('utf-8')))
                 helpers.raw_data += "\n[+] Found object stream (ObjStm) in object %s:\n%s\n" % (obj_num_bin, stm.decode('utf-8'))
                 summary_string = "Found object stream (ObjStm) in object %s:@" % obj_num_bin
                 summary_desc = "%s" % stm.decode('utf-8')
@@ -2605,9 +2426,7 @@ class PDF:
                 # Try to LZW decompress it
                 try:
                     decompressed = self.lzw_decode(helpers, stream_data)
-                    ##print('\n[+] Decompressed stream (LZW decompression):')
                     helpers.raw_data += '\n[+] Decompressed stream (LZW decompression):\n'
-                    ##print(decompressed)
                     helpers.raw_data += decompressed
                     helpers.raw_data += "\n"
 
@@ -2625,10 +2444,7 @@ class PDF:
                     # analysis of the OLE file.
                     elif helpers.determine_mimetype(decompressed) == 'ole':
                         ms_ole = OLEParser(decompressed)
-                        #f = open("ole_temp.bin", "r+b")
-                        #f.write(decompressed)
                         ms_ole.extract_embedded_ole(helpers, "ole_temp", "ole_temp")
-                        #f.close()
 
                 except AttributeError:
                     pass
@@ -2638,11 +2454,9 @@ class PDF:
                 try:
                     # Check if there is any code in the object. If there is, print the entire object
                     if b"var " in decompressed or b"function" in decompressed:
-                        #print(decompressed.decode('utf-8'))
                         helpers.raw_data += decompressed.decode('utf-8')
                         helpers.raw_data += "\n"
                     else:
-                        #print(decompressed[:1000])
                         helpers.raw_data += decompressed[:1000]
                         helpers.raw_data += "\n"
 
@@ -2686,7 +2500,6 @@ class PDF:
                         f.close()
                 except UnicodeError:
                     # If .decode('utf-8') on the decompressed data failed
-                    #print(decompressed)
                     helpers.raw_data += decompressed
                     helpers.raw_data += "\n"
 
@@ -2707,11 +2520,6 @@ class PDF:
                         f.write(decompressed)
                         ms_ole.extract_embedded_ole(helpers, f.name, f.name)
                         f.close()
-                #try:
-                #    #print("\n[+] Hex View@")
-                #    #print(hexdump.hexdump(decompressed)[:2000])
-                #except TypeError:
-                #    pass
 
 
     def print_obj_short(self, helpers, objects, obj_table):
@@ -2746,16 +2554,10 @@ class PDF:
         try:
             data = data.strip(b'\r\n')
             decompressed = zlib.decompress(data)  # Here you have your clean decompressed stream
-            #print("\n[+] Decompressed stream (Zlib Inflate):\n")
             helpers.raw_data += "\n[+] Decompressed stream (Zlib Inflate):\n"
-            #decomp_file = "decompressed_obj_%s" % obj_num_bin
-            #f = open(decomp_file, "w+b")
-            #f.write(decompressed)
-            #f.close()
             return decompressed
+        
         except zlib.error as e:
-            ##print(e)
-            pass
             return 0
 
     def lzw_decode(self, helpers, data):
@@ -2791,9 +2593,7 @@ class PDF:
         """
         export_data_objects = re.findall(helpers.export_data_regex, data)
         for exp in export_data_objects:
-            #print("\n[+] Found embedded file/object:@")
             helpers.raw_data += "\n[+] Found embedded file/object:\n"
-            #print(exp.decode('utf-8'))
             helpers.raw_data += exp.decode('utf-8')
             helpers.raw_data += "\n"
             helpers.add_summary_if_no_duplicates("Found embedded file/object", exp.decode('utf-8'))
@@ -2806,13 +2606,10 @@ class PDF:
         if re.findall(helpers.filespec_regex, data):
             filespec = re.findall(helpers.file_regex, data)
             for file in filespec:
-                #print("\n[+] Found file reference:")
                 helpers.raw_data += "\n[+] Found file reference:\n"
-                #print(file.decode('utf-8'))
                 helpers.raw_data += file.decode('utf-8')
                 helpers.raw_data += "\n"
                 if b'downl.SettingContent-ms' in file:
-                    #print("[!] Possible abuse of SettingContent-ms file to download malicious content.")
                     helpers.raw_data += "[!] Possible abuse of SettingContent-ms file to download malicious content.\n"
                     helpers.add_summary_if_no_duplicates("Found embedded file/object", file.decode('utf-8'))
                 break
@@ -2824,7 +2621,6 @@ class PDF:
         """
         unc = re.findall(helpers.unc_regex, data)
         for p in unc:
-            #print("\n[!] Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993) in object %s, to path: %s@" % (obj_num_bin, p))
             helpers.raw_data += "\n[!] Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993) in object %s,to path: %s\n" % (obj_num_bin, p)
             helpers.add_summary_if_no_duplicates('Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993)', p)
 
@@ -2842,15 +2638,12 @@ class PDF:
         emb_files = re.findall(helpers.emb_file_regex, data)
 
         if re.findall(helpers.emb_file_regex, data):
-            #print("\n[+] Found file reference:")
             helpers.raw_data += "\n[+] Found file reference:\n"
             file_ref = re.findall(helpers.file_ref_regex, data)
             for file in file_ref:
-                #print(file.decode('utf-8'))
                 helpers.raw_data += file.decode('utf-8')
                 helpers.raw_data += "\n"
                 if b'downl.SettingContent-ms' in file:
-                    #print("[!] Possible abuse of SettingContent-ms file to download malicious content.")
                     helpers.raw_data += "[!] Possible abuse of SettingContent-ms file to download malicious content.\n"
                 break
         return emb_files
@@ -2869,7 +2662,6 @@ class PDF:
         js_ref_regex = re.compile(helpers.js_ref_pattern)
         for match in re.finditer(js_ref_regex, data):
             referred_obj = data[match.span(0)[0]:match.span(0)[1]][12:14]
-            #print("\n[!] Found JS reference in object %s, to object %s" % (obj_num_bin, referred_obj))
             helpers.raw_data += "\n[!] Found JS reference in object %s, to object %s\n" % (obj_num_bin, referred_obj)
 
 
@@ -2884,11 +2676,9 @@ class PDF:
         o_regex = re.compile(helpers.o_regex)
 
         for match in re.finditer(aa_regex, data):
-            #print("\n[!] Found automatic action /AA in object %s" % obj_num_bin)
             helpers.raw_data += "\n[!] Found automatic action /AA in object %s\n" % obj_num_bin
 
         for match in re.finditer(openaction_regex, data):
-            #print("\n[!] Found OpenAction in object %s" % obj_num_bin)
             helpers.raw_data += "\n[!] Found OpenAction in object %s\n" % obj_num_bin
 
         for match in re.finditer(o_regex, data):
@@ -2897,7 +2687,6 @@ class PDF:
 
         for match in re.finditer(helpers.open_a_ref_regex, data):
             referred_obj = data[match.span(0)[0]:match.span(0)[1]][12:14]
-            ##print("[!] Found OpenAction reference in object %s, to object: %s" % (obj_num_bin, referred_obj.decode('utf-8')))
             helpers.raw_data += "[!] Found OpenAction reference in object %s, to object: %s\n" % (obj_num_bin, referred_obj.decode('utf-8'))
 
     def find_launch(self, helpers, data, obj_num_bin):
@@ -2907,9 +2696,7 @@ class PDF:
         # /Launch
         aa_regex = re.compile(helpers.auto_action_pattern)
         for match in re.finditer(aa_regex, data):
-            #print("\n[!] Found \"/Launch\" in object %s@" % obj_num_bin)
             helpers.raw_data += "\n[!] Found \"/Launch\" in object %s\n" % obj_num_bin
-            #print(match)
             helpers.raw_data += match
             helpers.raw_data += "\n"
 
@@ -2927,9 +2714,7 @@ class PDF:
             return 0
         else:
             for ref in goto_ref:
-                ##print("\n[!] Found \"/Goto*\" in object %s@" % obj_num_bin)
                 helpers.raw_data += "\n[!] Found \"/Goto*\" in object %s\n" % obj_num_bin
-                ##print(ref)
                 helpers.raw_data += ref
 
     def find_submitform(self, helpers, data, obj_num_bin):
@@ -2942,9 +2727,7 @@ class PDF:
             return 0
         else:
             for sub in submit_form:
-                #print("\n[!] Found \"/SubmitForm\" in object %s" % obj_num_bin)
                 helpers.raw_data += "\n[!] Found \"/SubmitForm\" in object %s\n" % obj_num_bin
-                #print(sub)
                 helpers.raw_data += sub
 
 
@@ -2965,13 +2748,14 @@ class PDF:
                 clean = re.sub(b' ', b'', stream_data)
                 clean = re.sub(b'\r\n', b'', clean)
                 test = re.findall(rb'^[A-Fa-f0-9]+', clean)
+                
                 for hex in test:
                     if len(hex) > 1:
-                        ##print(binascii.unhexlify(test[0]).decode('utf-8'))
                         helpers.raw_data += binascii.unhexlify(test[0]).decode('utf-8')
                         helpers.raw_data += "\n"
                         hex_data = binascii.a2b_hex(hex)
                         chunk = hex_data[:4]
+                        
                         if b'\\rt' in chunk:
                             rtf = RTF(hex_data)
                             summary_string = "Embedded document"
@@ -2996,28 +2780,22 @@ class DocParser:
 def main():
     # check if a file path was provided to the tool
     if len(sys.argv) < 2:
-        #print("\n[-] maldocs_parser: provide file path\nUsage: maldocs_parser.exe <file_path>\n")
         exit(0)
     helpers = Helpers()
     filename = sys.argv[1]
 
-    # #print("[+] Parsing file: %s@" % filename)
     helpers.raw_data += "[+] Parsing file: %s\n" % filename
 
     # Read the file binary data
+    # IF YOU WANT THE FILE TO BE SENT TO THE SCRIPT AS BYTES FROM THE NETWORK/REMOTE HOST, USE io.BytesIO.
+    # -----------------------------------------------------------------------------------------------------
     file = open(filename, 'r+b')
-
-    # THIS NEEDS TO BE MODIFIED TO BYTES IO
-    #f = io.BytesIO(b"\x00\x01")
-
     data = file.read()
 
     # Calculate SHA256 hash
     readable_hash = hashlib.sha256(data).hexdigest()
-    # #print("[+] File sha256: %s" % str(readable_hash))
     helpers.raw_data += "[+] File sha256: %s\n" % str(readable_hash)
 
-    # #print("+======================= Static Analysis Report ======================+")
     helpers.raw_data += "\n\nStatic Analysis Report\n\n"
 
     # Determine file type via magic bytes/signature
@@ -3086,7 +2864,6 @@ def main():
         ooxml_obj = OOXMLParser(data)
 
         # Find and extract embedded OLE files.
-        # #print("[+] Looking for embedded OLE files in OOXML ZIP container")
         helpers.raw_data += "[+] Looking for embedded OLE files in OOXML ZIP container\n"
         ooxml_obj.detect_emb_ole(helpers, data, filename)
 
@@ -3098,12 +2875,10 @@ def main():
             # check file extension to know how to read sheets
             if "xlsx" or "xlsm" in filename:
                 # The below method is specific to reading data from sheets in binary Excel worksheets
-                ##print("[+] Reading Excel sheets")
                 ooxml_excel.read_sheets(helpers, filename)
             # If the Excel is a binary worksheet (.xlsb)
             if "xlsb" in filename:
                 # The below method is specific to reading data from sheets in binary Excel worksheets
-                ##print("[+] Reading binary Excel sheets (.xlsb)")
                 ooxml_excel.read_binary_excel_sheets(helpers, filename)
 
         if ooxml_obj.doc_type == "ppt":
@@ -3112,7 +2887,6 @@ def main():
             pass
 
         ooxml_obj.parse_ole_file(helpers, data, filename)
-        ##print("[+] Looking for ActiveX objects in OOXML ZIP container")
         ooxml_obj.detect_activex(helpers, filename)
 
     # If the file is a PDF document
@@ -3125,40 +2899,14 @@ def main():
 
     # Prepare and print final summary analysis table
     helpers.summary_table.columns.alignment = BeautifulTable.ALIGN_LEFT
-    # #print("\n\n+---------------------------------------------------------------------+")
-    # #print("+======================= Static Analysis Summary ======================+")
+
     helpers.raw_data += "\n\nStatic Analysis Summary\n\n"
-    # #print("+---------------------------------------------------------------------+")
-    # #print(helpers.summary_table)
     helpers.raw_data += str(helpers.summary_table)
-
-    #helpers.raw_report_file.close()
-    #helpers.raw_report_file = open("report.txt", "r")
-
-    #data = helpers.raw_report_file.read()
-    # helpers.raw_json_report["raw_report"] = data
-
-    # raw_json_report = {"raw_report": {}}
-    #for r in helpers.raw_data:
-    #    raw = {"data": r}
-    #    helpers.raw_json_report["raw_report"] =
     helpers.raw_json_report["raw_report"] = helpers.raw_data
-
     helpers.json_report.update(helpers.raw_json_report)
-
     json_object_pretty = json.dumps(helpers.json_report, indent=2)
-    #print("[+] Compressed JSON Report:\n")
-    #print(json_obj_compressed)
-    #print("\n[+] Pretty JSON Report:\n")
+
     print(json_object_pretty)
-    #print("\n[+] Raw report:\n")
-    #print(helpers.raw_data)
-    #helpers.raw_report_file.close()
-    #os.remove("report.txt")
-    # except TypeError as e:
-    # #print(helpers.json_report)
-    #    #print(e)
-    #    pass
 
     if path.isdir('unzipped'):
         try:
@@ -3178,12 +2926,11 @@ def main():
         try:
             os.remove("obj.bin")
         except FileNotFoundError:
-            # #print("[-] The file obj.bin could not be found...")
             helpers.raw_data += "[-] The file obj.bin could not be found...\n"
         except PermissionError:
-            # #print("[-] The file obj.bin is still in use by the script. Close it and then remove it...")
             helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
 
 
 if __name__ == "__main__":
     main()
+
