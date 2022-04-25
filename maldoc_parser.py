@@ -725,6 +725,7 @@ class OLEParser:
 
                                 # Extract strings from stream.
                                 self.extract_unicode_and_ascii_string(helpers, s, stream_data)
+                                f.close()
 
                         else:
                             # VBA macros were detected.
@@ -749,7 +750,9 @@ class OLEParser:
 
                             # Add indication to analysis report stream table.
                             stream_table.rows.append([str("\\".join(stream)), print_string])
+                            f.close()
                     else:
+                        f.close()
                         continue
             f.close()
             stream_table.columns.alignment = BeautifulTable.ALIGN_LEFT
@@ -1727,9 +1730,10 @@ class OOXMLParser:
                 #    ms_ole.extract_embedded_ole(helpers, file, file)
 
                 else:
+                    file_handle.close()
                     continue
 
-            file_handle.close()
+
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
