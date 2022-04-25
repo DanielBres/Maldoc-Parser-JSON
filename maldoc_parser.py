@@ -389,18 +389,18 @@ class Helpers():
                 helpers.raw_data += "\n"
                 self.add_summary_if_no_duplicates(summary_string, string)
 
-        eq = re.findall(self.equation_regex, string)
-        if eq:
-            if "Ole10Native" in filename:
-                summary_string = "Possible Equation Editor exploit: " % filename.strip('\x01')
-                helpers.raw_data += summary_string
-                helpers.raw_data += "\n"
-                self.add_summary_if_no_duplicates(summary_string, string)
-            else:
-                summary_string = "Possible Equation Editor exploit: %s" % "".join(filename.strip('\x01'))
-                helpers.raw_data += summary_string
-                helpers.raw_data += "\n"
-                self.add_summary_if_no_duplicates(summary_string, string)
+        #eq = re.findall(self.equation_regex, string)
+        #if eq:
+        #    if "Ole10Native" in filename:
+        #        summary_string = "Possible Equation Editor exploit: " % filename.strip('\x01')
+        #        helpers.raw_data += summary_string
+        #        helpers.raw_data += "\n"
+        #        self.add_summary_if_no_duplicates(summary_string, string)
+        #    else:
+        #        summary_string = "Possible Equation Editor exploit: %s" % "".join(filename.strip('\x01'))
+        #        helpers.raw_data += summary_string
+        #        helpers.raw_data += "\n"
+        #        self.add_summary_if_no_duplicates(summary_string, string)
 
     def find_susp_functions_vba(self, helpers, filename, decompressed):
         """
@@ -2061,6 +2061,7 @@ class RTF:
 
         # Process arbitrary hex blobs.
         self.analyze_blob(helpers, blobs, len_blobs, f, filename, data)
+        os.remove("obj.bin")
 
     def analyze_ole_blob(self, helpers, ole_blobs, length, filename):
         """
@@ -2494,6 +2495,7 @@ class PDF:
                                 f.write(decompressed)
                                 ms_ole.extract_embedded_ole(helpers, "ole_temp.bin", "ole_temp.bin")
                                 f.close()
+                                os.remove("ole_temp.bin")
                 except TypeError:
 
                     # If decompression succeeded and the file is RTF, initiate the RTF class for inline analysis of
@@ -2840,7 +2842,7 @@ def main():
             xls_parser.parse_boundsheet_record(helpers, data)
 
             # Unhide hidden sheets via BOUNDSHEET record patching
-            xls_parser.unhide_sheets(helpers, file)
+            #xls_parser.unhide_sheets(helpers, file)
 
             # Extract data from sheets (XLM 4 macros)
             xls_parser.extract_sheets(helpers, filename)
@@ -2937,12 +2939,6 @@ def main():
             except:
                 pass
 
-    if path.isfile('data.txt'):
-        try:
-            os.remove("data.txt")
-        except FileNotFoundError:
-            pass
-
     if path.isfile("obj.bin"):
         try:
             os.remove("obj.bin")
@@ -2953,15 +2949,7 @@ def main():
 
     if path.isfile("patched_unhidden.xls"):
         try:
-            os.remove("obj.bin")
-        except FileNotFoundError:
-            helpers.raw_data += "[-] The file obj.bin could not be found...\n"
-        except PermissionError:
-            helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
-
-    if path.isfile("ole_temp.bin"):
-        try:
-            os.remove("obj.bin")
+            os.remove("patched_unhidden.xls")
         except FileNotFoundError:
             helpers.raw_data += "[-] The file obj.bin could not be found...\n"
         except PermissionError:
