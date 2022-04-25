@@ -1720,10 +1720,6 @@ class OOXMLParser:
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
-        try:
-            file_handle.close()
-        except:
-            pass
 
         if path.isdir('unzipped'):
             try:
