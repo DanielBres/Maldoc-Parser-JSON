@@ -1733,8 +1733,6 @@ class OOXMLParser:
                     file_handle.close()
                     continue
 
-
-
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
 
@@ -2072,12 +2070,16 @@ class RTF:
 
         # Process arbitrary hex blobs.
         self.analyze_blob(helpers, blobs, len_blobs, f, filename, data)
+        f.close()
         try:
             os.remove("obj.bin")
         except PermissionError as e:
-            remove = open(e.filename)
-            remove.close()
-            os.remove(e.filename)
+            try:
+                remove = open(e.filename)
+                remove.close()
+                os.remove(e.filename)
+            except:
+                pass
 
     def analyze_ole_blob(self, helpers, ole_blobs, length, filename):
         """
@@ -2511,7 +2513,7 @@ class PDF:
                                 f.write(decompressed)
                                 ms_ole.extract_embedded_ole(helpers, "ole_temp.bin", "ole_temp.bin")
                                 f.close()
-                                os.remove("ole_temp.bin")
+                            os.remove("ole_temp.bin")
                 except TypeError:
 
                     # If decompression succeeded and the file is RTF, initiate the RTF class for inline analysis of
