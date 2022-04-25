@@ -746,7 +746,6 @@ class OLEParser:
 
                             # Add indication to analysis report stream table.
                             stream_table.rows.append([str("\\".join(stream)), print_string])
-
                     else:
                         continue
             f.close()
@@ -1646,8 +1645,8 @@ class OOXMLParser:
 
                 if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
                     ms_ole = OLEParser(data)
-                    self.parse_ole_file(helpers, file_data, file, ms_ole)
-                    ms_ole.extract_embedded_ole(helpers, file, file)
+                    self.parse_ole_file(helpers, file, ms_ole)
+                    ms_ole.extract_embedded_ole(helpers, file, ms_ole)
                     file_handle.close()
 
                 elif re.findall(r".*\.rels", file):
@@ -1719,10 +1718,10 @@ class OOXMLParser:
                         helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
                     #file_handle.close()
 
-                elif not re.findall(r".*\.xml", file) and not re.findall(r".*\.bin", file) and not re.findall(r".*\.xml\.rels", file):
-                    ms_ole = OLEParser(file_data)
-                    self.parse_ole_file(helpers, file_data, file)
-                    ms_ole.extract_embedded_ole(helpers, file, file)
+                #elif not re.findall(r".*\.xml", file) and not re.findall(r".*\.bin", file) and not re.findall(r".*\.xml\.rels", file):
+                #    ms_ole = OLEParser(file_data)
+                #    self.parse_ole_file(helpers, file_data, file)
+                #    ms_ole.extract_embedded_ole(helpers, file, file)
 
                 else:
                     continue
