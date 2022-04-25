@@ -1759,7 +1759,7 @@ class OOXMLParser:
             if helpers.my_os == "Linux":
                 summary_string = "Found external relationship to OLE object in file: %s" % filename.replace("/unzipped", "")
                 helpers.raw_data += summary_string + " " + reference
-            helpers.add_summary_if_no_duplicates(summary_string, reference[0])
+            helpers.add_summary_if_no_duplicates(summary_string, reference)
             return reference
 
         if hyperlinks:
@@ -2959,3 +2959,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
