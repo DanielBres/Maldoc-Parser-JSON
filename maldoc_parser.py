@@ -42,6 +42,7 @@ import platform
 import binascii
 import msoffcrypto
 from os import path
+from pathlib import Path
 from sys import exit
 from io import StringIO
 # from capstone import *
@@ -685,7 +686,8 @@ class OLEParser:
             ole = olefile.OleFileIO(fname)
 
             # Read input file data.
-            file_data = open(fname, "rb").read()
+            f = open(fname, "rb")
+            file_data = f.read()
 
             # Iterate over each stream in the OLE file.
             for stream in ole.listdir():
@@ -747,6 +749,7 @@ class OLEParser:
 
                     else:
                         continue
+            f.close()
             stream_table.columns.alignment = BeautifulTable.ALIGN_LEFT
             helpers.raw_data += str(stream_table)
 
@@ -1638,100 +1641,99 @@ class OOXMLParser:
 
         for file in files:
 
-            file_handle = open(file, "rb")
-            file_data = file_handle.read()
+            with open(file, "rb") as file_handle:
+                file_data = file_handle.read()
 
-            if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
-                ms_ole = OLEParser(data)
-                self.parse_ole_file(helpers, file_data, file)
-                ms_ole.extract_embedded_ole(helpers, file, file)
-                file_handle.close()
+                if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
+                    ms_ole = OLEParser(data)
+                    self.parse_ole_file(helpers, file_data, file)
+                    ms_ole.extract_embedded_ole(helpers, file, file)
+                    file_handle.close()
 
-            if ".rels" in file:
-                xml_data = open(file, "r").read()
-                reference = self.find_ext_references(helpers, xml_data, file)
-                if reference:
-                    print_string = "External relationships in file: %s" % file
-                    indicators.rows.append([print_string, reference])
-                file_handle.close()
-
-            if "sharedStrings.xml" in file:
-                tree = ET.parse(file)
-                root = tree.getroot()
-                clean_sst_strings = []
-
-                for child in root:
-                    for attrib in child:
-                        if attrib.text is not None:
-                            clean_sst_strings.append(attrib.text)
-
-                if clean_sst_strings:
-                    print_line = "Shared Strings Table Strings"
-                    indicators.rows.append([print_line, ", ".join(clean_sst_strings)])
-                    helpers.add_summary_if_no_duplicates(print_line, ", ".join(clean_sst_strings))
-                file_handle.close()
-
-            if "webSettings.xml" in file:
-                try:
+                elif ".rels" in file:
                     xml_data = open(file, "r").read()
-                    frame = re.findall(r'frame\" Target=\".*\" TargetMode=\"External\"\/\>\<\/Relationships\>',
-                                       xml_data)
+                    reference = self.find_ext_references(helpers, xml_data, file)
+                    if reference:
+                        print_string = "External relationships in file: %s" % file
+                        indicators.rows.append([print_string, reference])
+                    #file_handle.close()
 
-                    if frame:
-                        print_line = "Detected external relationship to MSHTML frame in file: %s" % file.strip('\x01')
-                        helpers.add_summary_if_no_duplicates(print_line, frame)
-                    file_handle.close()
+                elif "sharedStrings.xml" in file:
+                    tree = ET.parse(file)
+                    root = tree.getroot()
+                    clean_sst_strings = []
 
-                except UnicodeDecodeError as e:
-                    helpers.raw_data += "[-] Error reading %s: %s\n" % (str(file), str(e))
-                    continue
+                    for child in root:
+                        for attrib in child:
+                            if attrib.text is not None:
+                                clean_sst_strings.append(attrib.text)
 
-            if "document.xml" in file or "workbook.xml" in file:
-                try:
-                    xml_data = open(file, "r").read()
-                    dde_command = self.detect_dde(helpers, xml_data, file)
-                    if dde_command:
-                        print_line = "Detected DDE usage in file: %s" % file.strip('\x01')
-                        indicators.rows.append([print_line, dde_command])
-                        helpers.add_summary_if_no_duplicates(print_line, dde_command)
+                    if clean_sst_strings:
+                        print_line = "Shared Strings Table Strings"
+                        indicators.rows.append([print_line, ", ".join(clean_sst_strings)])
+                        helpers.add_summary_if_no_duplicates(print_line, ", ".join(clean_sst_strings))
+                    #file_handle.close()
 
-                    if "&lt" in xml_data:
-                        possible_payload = re.findall(r">&lt(.*)", xml_data)
-                        print_line = "Possible payload in file: %s" % file.strip('\x01')
-                        indicators.rows.append([print_line, possible_payload])
-                        helpers.add_summary_if_no_duplicates(print_line, possible_payload[:100])
-                    file_handle.close()
+                elif "webSettings.xml" in file:
+                    try:
+                        xml_data = open(file, "r").read()
+                        frame = re.findall(r'frame\" Target=\".*\" TargetMode=\"External\"\/\>\<\/Relationships\>',
+                                           xml_data)
 
-                except UnicodeDecodeError as e:
-                    file_handle.close()
-                    continue
+                        if frame:
+                            print_line = "Detected external relationship to MSHTML frame in file: %s" % file.strip('\x01')
+                            helpers.add_summary_if_no_duplicates(print_line, frame)
+                        #file_handle.close()
 
-            if "macrosheets" in file or "worksheets" in file:
+                    except UnicodeDecodeError as e:
+                        helpers.raw_data += "[-] Error reading %s: %s\n" % (str(file), str(e))
+                        continue
 
-                xml_data = open(file, "r", errors="ignore").read()
-                emb_ole_tag_data = self.detect_emb_ole_tag(xml_data)
-                if emb_ole_tag_data:
-                    print_line = "reference to embedded OLE object in file: %s" % file.strip('\x01')
-                    indicators.rows.append([print_line, emb_ole_tag_data])
-                    helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
-                file_handle.close()
+                elif "document.xml" in file or "workbook.xml" in file:
+                    try:
+                        xml_data = open(file, "r").read()
+                        dde_command = self.detect_dde(helpers, xml_data, file)
+                        if dde_command:
+                            print_line = "Detected DDE usage in file: %s" % file.strip('\x01')
+                            indicators.rows.append([print_line, dde_command])
+                            helpers.add_summary_if_no_duplicates(print_line, dde_command)
+
+                        if "&lt" in xml_data:
+                            possible_payload = re.findall(r">&lt(.*)", xml_data)
+                            print_line = "Possible payload in file: %s" % file.strip('\x01')
+                            indicators.rows.append([print_line, possible_payload])
+                            helpers.add_summary_if_no_duplicates(print_line, possible_payload[:100])
+                        #file_handle.close()
+
+                    except UnicodeDecodeError as e:
+                        #file_handle.close()
+                        continue
+
+                elif "macrosheets" in file or "worksheets" in file:
+
+                    xml_data = open(file, "r", errors="ignore").read()
+                    emb_ole_tag_data = self.detect_emb_ole_tag(xml_data)
+                    if emb_ole_tag_data:
+                        print_line = "reference to embedded OLE object in file: %s" % file.strip('\x01')
+                        indicators.rows.append([print_line, emb_ole_tag_data])
+                        helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
+                    #file_handle.close()
+
+                elif ".xml" not in file and ".bin" not in file:
+                    ms_ole = OLEParser(file_data)
+                    self.parse_ole_file(helpers, file_data, file)
+                    ms_ole.extract_embedded_ole(helpers, file, file)
+
+                else:
+                    print_string = "Suspicios file seen."
+                    helpers.add_summary_if_no_duplicates(print_string, str(file_handle.name))
 
             file_handle.close()
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
 
-        if path.isdir('unzipped'):
-            try:
-                shutil.rmtree("unzipped")
-            except PermissionError as e:
-                try:
-                    f = open(e.filename)
-                    f.close()
-                    os.remove(e.filename)
-                    shutil.rmtree("unzipped")
-                except:
-                    pass
+
 
     def find_ext_references(self, helpers, data, filename):
 
@@ -2061,7 +2063,12 @@ class RTF:
 
         # Process arbitrary hex blobs.
         self.analyze_blob(helpers, blobs, len_blobs, f, filename, data)
-        os.remove("obj.bin")
+        try:
+            os.remove("obj.bin")
+        except PermissionError as e:
+            remove = open(e.filename)
+            remove.close()
+            os.remove(e.filename)
 
     def analyze_ole_blob(self, helpers, ole_blobs, length, filename):
         """
@@ -2932,29 +2939,14 @@ def main():
             shutil.rmtree("unzipped")
         except PermissionError as e:
             try:
-                f = open(e.filename)
-                f.close()
-                os.remove(e.filename)
+                opened_path = Path(e.filename)
+                opened_path.close()
+                #f = open(e.filename)
+                #f.close()
+                #os.remove(e.filename)
                 shutil.rmtree("unzipped")
             except:
                 pass
-
-    if path.isfile("obj.bin"):
-        try:
-            os.remove("obj.bin")
-        except FileNotFoundError:
-            helpers.raw_data += "[-] The file obj.bin could not be found...\n"
-        except PermissionError:
-            helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
-
-    if path.isfile("patched_unhidden.xls"):
-        try:
-            os.remove("patched_unhidden.xls")
-        except FileNotFoundError:
-            helpers.raw_data += "[-] The file obj.bin could not be found...\n"
-        except PermissionError:
-            helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
-
 
 if __name__ == "__main__":
     main()
