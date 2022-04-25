@@ -2947,6 +2947,22 @@ def main():
     # Print final JSON report
     print(json_object_pretty)
 
+    if os.path.exists("obj.bin"):
+        f = open("obj.bin")
+        f.close()
+        try:
+            os.remove("obj.bin")
+        except PermissionError:
+            pass
+
+    if os.path.exists("ole_temp.bin"):
+        f = open("ole_temp.bin")
+        f.close()
+        try:
+            os.remove("ole_temp.bin")
+        except PermissionError:
+            pass
+
     if path.isdir('unzipped'):
         try:
             shutil.rmtree("unzipped")
@@ -2955,9 +2971,6 @@ def main():
                 opened_path = Path(e.filename)
                 opened_path.close()
                 os.remove(e.filename)
-                #f = open(e.filename)
-                #f.close()
-                #os.remove(e.filename)
                 shutil.rmtree("unzipped")
             except:
                 pass
