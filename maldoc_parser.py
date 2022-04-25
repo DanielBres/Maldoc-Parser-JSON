@@ -1714,12 +1714,16 @@ class OOXMLParser:
                     print_line = "reference to embedded OLE object in file: %s" % file.strip('\x01')
                     indicators.rows.append([print_line, emb_ole_tag_data])
                     helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
-                    file_handle.close()
+                file_handle.close()
 
             file_handle.close()
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
+        try:
+            file_handle.close()
+        except:
+            pass
 
         if path.isdir('unzipped'):
             try:
@@ -1729,6 +1733,7 @@ class OOXMLParser:
                     f = open(e.filename)
                     f.close()
                     os.remove(e.filename)
+                    shutil.rmtree("unzipped")
                 except:
                     pass
 
@@ -2921,15 +2926,20 @@ def main():
     helpers.json_report.update(helpers.raw_json_report)
     json_object_pretty = json.dumps(helpers.json_report, indent=2)
 
+    # Print final JSON report
     print(json_object_pretty)
 
     if path.isdir('unzipped'):
         try:
             shutil.rmtree("unzipped")
         except PermissionError as e:
-            f = open(e.filename)
-            f.close()
-            os.remove(e.filename)
+            try:
+                f = open(e.filename)
+                f.close()
+                os.remove(e.filename)
+                shutil.rmtree("unzipped")
+            except:
+                pass
 
     if path.isfile('data.txt'):
         try:
@@ -2944,6 +2954,7 @@ def main():
             helpers.raw_data += "[-] The file obj.bin could not be found...\n"
         except PermissionError:
             helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
+
 
 
 if __name__ == "__main__":
