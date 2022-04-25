@@ -683,7 +683,10 @@ class OLEParser:
 
         try:
             # Parse input file as OLE to analyze its streams/storages.
-            ole = olefile.OleFileIO(fname)
+            try:
+                ole = olefile.OleFileIO(fname)
+            except TypeError as e:
+                return
 
             # Read input file data.
             f = open(fname, "rb")
@@ -1646,7 +1649,7 @@ class OOXMLParser:
                 if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
                     ms_ole = OLEParser(data)
                     self.parse_ole_file(helpers, file, ms_ole)
-                    ms_ole.extract_embedded_ole(helpers, file, ms_ole)
+                    ms_ole.extract_embedded_ole(helpers, file, file)
                     file_handle.close()
 
                 elif re.findall(r".*\.rels", file):
@@ -1784,6 +1787,9 @@ class OOXMLParser:
     def parse_ole_file(self, helpers, filename, ms_ole):
         #ms_ole = OLEParser(data)
         ms_ole.extract_embedded_ole(helpers, filename, filename)
+        if open(filename):
+            fd = os.open(filename, os.O_WRONLY)
+            os.close(fd)
 
     def detect_eqedit32(self, helpers, data):
         """
