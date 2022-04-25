@@ -2955,9 +2955,22 @@ def main():
         except PermissionError:
             helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
 
+    if path.isfile("patched_unhidden.xls"):
+        try:
+            os.remove("obj.bin")
+        except FileNotFoundError:
+            helpers.raw_data += "[-] The file obj.bin could not be found...\n"
+        except PermissionError:
+            helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
+
+    if path.isfile("ole_temp.bin"):
+        try:
+            os.remove("obj.bin")
+        except FileNotFoundError:
+            helpers.raw_data += "[-] The file obj.bin could not be found...\n"
+        except PermissionError:
+            helpers.raw_data += "[-] The file obj.bin is still in use by the script. Close it and then remove it...\n"
 
 
 if __name__ == "__main__":
     main()
-    
-    
