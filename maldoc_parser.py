@@ -1,26 +1,26 @@
-###############################################################################################################################
-##                                                                                                                           ##
-##                                                                                                                           ##
-##  __   __       _     _              _____                                                                                 ##
-## |  \\/  |     | |   | |            |  __ \                                                                                ##
-## | \\  / | __ _| | __| | ___   ___  | |__) |_ _ _ __ ___  ___ _ __                                                         ##
-## | |\\/| |/ _` | |/ _` |/ _ \ / __| |  ___/ _` | '__/ __|/ _ \ '__|                                                        ##
-## | |   | | (_| | | (_| | (_) | (__  | |  | (_| | |  \__ \  __/ |                                                           ##
-## |_|   |_|\__,_|_|\___,|\___/ \___| |_|   \__,_|_|  |___/\___|_|                                                           ##
-##                                                                                                                           ##
-##                                                                                                                           ##
-## Author: Daniel Bresler                                                                                                    ##
-##                                                                                                                           ##
-## maldoc_parser is a static analysis tool for common Office formats and PDF files.                                          ##
-## The main goal of the tool is to automate static analysis as much as possible.                                             ##
-## It currently supports OLE, OOXML, RTF and PDF files.                                                                      ##
-##                                                                                                                           ##
-## Python 3.x                                                                                                                ##
-##                                                                                                                           ##
-## Usage: maldoc_parser.py [MALDOC_FILE_PATH]                                                                                ##
-##                                                                                                                           ##
-##                                                                                                                           ##
-###############################################################################################################################
+########################################################################################################################
+##                                                                                                                    ##
+##                                                                                                                    ##
+##  __   __       _     _              _____                                                                          ##
+## |  \\/  |     | |   | |            |  __ \                                                                         ##
+## | \\  / | __ _| | __| | ___   ___  | |__) |_ _ _ __ ___  ___ _ __                                                  ##
+## | |\\/| |/ _` | |/ _` |/ _ \ / __| |  ___/ _` | '__/ __|/ _ \ '__|                                                 ##
+## | |   | | (_| | | (_| | (_) | (__  | |  | (_| | |  \__ \  __/ |                                                    ##
+## |_|   |_|\__,_|_|\___,|\___/ \___| |_|   \__,_|_|  |___/\___|_|                                                    ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+## Author: Daniel Bresler                                                                                             ##
+##                                                                                                                    ##
+## maldoc_parser is a static analysis tool for common Office formats and PDF files.                                   ##
+## The main goal of the tool is to automate static analysis as much as possible.                                      ##
+## It currently supports OLE, OOXML, RTF and PDF files.                                                               ##
+##                                                                                                                    ##
+## Python 3.x                                                                                                         ##
+##                                                                                                                    ##
+## Usage: maldoc_parser.py [MALDOC_FILE_PATH]                                                                         ##
+##                                                                                                                    ##
+##                                                                                                                    ##
+########################################################################################################################
 
 import re
 import os
@@ -1617,11 +1617,10 @@ class OOXMLParser:
         return files
 
     def detect_emb_ole(self, helpers, data, filename):
-       
+
         files = self.list_archive_files(helpers, data, filename)
         helpers.raw_data += "\nOOXML Archive files:\n"
         for f in files:
-            #print(f.replace(".\\unzipped", ""))
             helpers.raw_data += str(f.replace(".\\unzipped", ""))
             if "\\word\\" in f:
                 self.doc_type = "word"
@@ -1646,6 +1645,7 @@ class OOXMLParser:
                 ms_ole = OLEParser(data)
                 self.parse_ole_file(helpers, file_data, file)
                 ms_ole.extract_embedded_ole(helpers, file, file)
+                file_handle.close()
 
             if ".rels" in file:
                 xml_data = open(file, "r").read()
@@ -1653,6 +1653,7 @@ class OOXMLParser:
                 if reference:
                     print_string = "External relationships in file: %s" % file
                     indicators.rows.append([print_string, reference])
+                file_handle.close()
 
             if "sharedStrings.xml" in file:
                 tree = ET.parse(file)
@@ -1668,6 +1669,7 @@ class OOXMLParser:
                     print_line = "Shared Strings Table Strings"
                     indicators.rows.append([print_line, ", ".join(clean_sst_strings)])
                     helpers.add_summary_if_no_duplicates(print_line, ", ".join(clean_sst_strings))
+                file_handle.close()
 
             if "webSettings.xml" in file:
                 try:
@@ -1678,6 +1680,7 @@ class OOXMLParser:
                     if frame:
                         print_line = "Detected external relationship to MSHTML frame in file: %s" % file.strip('\x01')
                         helpers.add_summary_if_no_duplicates(print_line, frame)
+                    file_handle.close()
 
                 except UnicodeDecodeError as e:
                     helpers.raw_data += "[-] Error reading %s: %s\n" % (str(file), str(e))
@@ -1697,8 +1700,10 @@ class OOXMLParser:
                         print_line = "Possible payload in file: %s" % file.strip('\x01')
                         indicators.rows.append([print_line, possible_payload])
                         helpers.add_summary_if_no_duplicates(print_line, possible_payload[:100])
+                    file_handle.close()
 
                 except UnicodeDecodeError as e:
+                    file_handle.close()
                     continue
 
             if "macrosheets" in file or "worksheets" in file:
@@ -1709,12 +1714,23 @@ class OOXMLParser:
                     print_line = "reference to embedded OLE object in file: %s" % file.strip('\x01')
                     indicators.rows.append([print_line, emb_ole_tag_data])
                     helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
+                    file_handle.close()
 
             file_handle.close()
 
         indicators.columns.alignment = BeautifulTable.ALIGN_LEFT
         helpers.raw_data += str(indicators)
 
+        if path.isdir('unzipped'):
+            try:
+                shutil.rmtree("unzipped")
+            except PermissionError as e:
+                try:
+                    f = open(e.filename)
+                    f.close()
+                    os.remove(e.filename)
+                except:
+                    pass
 
     def find_ext_references(self, helpers, data, filename):
 
@@ -2275,8 +2291,8 @@ class RTF:
 
         """
         equation = re.findall(helpers.equation_byte_regex, data)
-        #equation1 = re.findall(helpers.equation_regex, data)
-        #summary_desc = ""
+        # equation1 = re.findall(helpers.equation_regex, data)
+        # summary_desc = ""
         if equation:
             summary_string = "Indication of Equation Editor exploit " "(CVE-2017-11882) in stream:@ %s" % filename
 
@@ -2352,14 +2368,12 @@ class PDF:
                     helpers.raw_data += str(e)
                     helpers.raw_data += "\n"
 
-
             # Extract all URIs to list
             uris = self.extract_uri(helpers, obj)
 
             # If there are any /URI in the document, it will enter the for loop to log it and add it to the
             # summary table.
             for uri in uris:
-
                 helpers.raw_data += "[+] Found URI in object %s:\n%s\n" % (obj_num_bin, uri.decode('utf-8'))
                 summary_string = ("Found URI in object %s:@" % obj_num_bin)
                 summary_desc = "%s" % uri.decode('utf-8')
@@ -2370,8 +2384,8 @@ class PDF:
             # If there are any /EmbeddedFile in the document, it will enter the for loop to log it and add it to the
             # summary table.
             for emb_file in emb_files:
-
-                helpers.raw_data += "\n[+] Found embedded file in object %s:\n%s\n" % (obj_num_bin, emb_file.decode('utf-8'))
+                helpers.raw_data += "\n[+] Found embedded file in object %s:\n%s\n" % (
+                obj_num_bin, emb_file.decode('utf-8'))
                 summary_string = "Found embedded file in object %s:" % obj_num_bin
                 summary_desc = "%s" % emb_file.decode('utf-8')
                 helpers.add_summary_if_no_duplicates(summary_string, summary_desc)
@@ -2382,7 +2396,8 @@ class PDF:
             # If there are any /ObjStm in the document, it will enter the for loop to log it and add it to the
             # summary table.
             for stm in obj_stm:
-                helpers.raw_data += "\n[+] Found object stream (ObjStm) in object %s:\n%s\n" % (obj_num_bin, stm.decode('utf-8'))
+                helpers.raw_data += "\n[+] Found object stream (ObjStm) in object %s:\n%s\n" % (
+                obj_num_bin, stm.decode('utf-8'))
                 summary_string = "Found object stream (ObjStm) in object %s:@" % obj_num_bin
                 summary_desc = "%s" % stm.decode('utf-8')
                 helpers.add_summary_if_no_duplicates(summary_string, summary_desc)
@@ -2521,7 +2536,6 @@ class PDF:
                         ms_ole.extract_embedded_ole(helpers, f.name, f.name)
                         f.close()
 
-
     def print_obj_short(self, helpers, objects, obj_table):
 
         """
@@ -2556,7 +2570,7 @@ class PDF:
             decompressed = zlib.decompress(data)  # Here you have your clean decompressed stream
             helpers.raw_data += "\n[+] Decompressed stream (Zlib Inflate):\n"
             return decompressed
-        
+
         except zlib.error as e:
             return 0
 
@@ -2621,8 +2635,10 @@ class PDF:
         """
         unc = re.findall(helpers.unc_regex, data)
         for p in unc:
-            helpers.raw_data += "\n[!] Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993) in object %s,to path: %s\n" % (obj_num_bin, p)
-            helpers.add_summary_if_no_duplicates('Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993)', p)
+            helpers.raw_data += "\n[!] Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993) in object %s,to path: %s\n" % (
+            obj_num_bin, p)
+            helpers.add_summary_if_no_duplicates(
+                'Found UNC path (possible Adobe Reader NTLM hash leak vulnerability CVE-2018-4993)', p)
 
     def extract_uri(self, helpers, data):
         """
@@ -2664,7 +2680,6 @@ class PDF:
             referred_obj = data[match.span(0)[0]:match.span(0)[1]][12:14]
             helpers.raw_data += "\n[!] Found JS reference in object %s, to object %s\n" % (obj_num_bin, referred_obj)
 
-
     def open_action(self, helpers, data, obj_num_bin):
 
         """
@@ -2682,12 +2697,13 @@ class PDF:
             helpers.raw_data += "\n[!] Found OpenAction in object %s\n" % obj_num_bin
 
         for match in re.finditer(o_regex, data):
-            #print("\n[!] Found /O actions dictionary in object %s" % obj_num_bin)
+            # print("\n[!] Found /O actions dictionary in object %s" % obj_num_bin)
             helpers.raw_data += "\n[!] Found /O actions dictionary in object %s\n" % obj_num_bin
 
         for match in re.finditer(helpers.open_a_ref_regex, data):
             referred_obj = data[match.span(0)[0]:match.span(0)[1]][12:14]
-            helpers.raw_data += "[!] Found OpenAction reference in object %s, to object: %s\n" % (obj_num_bin, referred_obj.decode('utf-8'))
+            helpers.raw_data += "[!] Found OpenAction reference in object %s, to object: %s\n" % (
+            obj_num_bin, referred_obj.decode('utf-8'))
 
     def find_launch(self, helpers, data, obj_num_bin):
         """
@@ -2730,7 +2746,6 @@ class PDF:
                 helpers.raw_data += "\n[!] Found \"/SubmitForm\" in object %s\n" % obj_num_bin
                 helpers.raw_data += sub
 
-
     def validate_hex_data(self, helpers, data):
         """
         Attempts to clean hex data found in "ASCIIHexDecode streams.
@@ -2748,14 +2763,14 @@ class PDF:
                 clean = re.sub(b' ', b'', stream_data)
                 clean = re.sub(b'\r\n', b'', clean)
                 test = re.findall(rb'^[A-Fa-f0-9]+', clean)
-                
+
                 for hex in test:
                     if len(hex) > 1:
                         helpers.raw_data += binascii.unhexlify(test[0]).decode('utf-8')
                         helpers.raw_data += "\n"
                         hex_data = binascii.a2b_hex(hex)
                         chunk = hex_data[:4]
-                        
+
                         if b'\\rt' in chunk:
                             rtf = RTF(hex_data)
                             summary_string = "Embedded document"
@@ -2933,4 +2948,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
