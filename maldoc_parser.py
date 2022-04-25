@@ -1646,11 +1646,11 @@ class OOXMLParser:
 
                 if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
                     ms_ole = OLEParser(data)
-                    self.parse_ole_file(helpers, file_data, file)
+                    self.parse_ole_file(helpers, file_data, file, ms_ole)
                     ms_ole.extract_embedded_ole(helpers, file, file)
                     file_handle.close()
 
-                elif ".rels" in file:
+                elif re.findall(r".*\.rels", file):
                     xml_data = open(file, "r").read()
                     reference = self.find_ext_references(helpers, xml_data, file)
                     if reference:
@@ -1658,7 +1658,7 @@ class OOXMLParser:
                         indicators.rows.append([print_string, reference])
                     #file_handle.close()
 
-                elif "sharedStrings.xml" in file:
+                elif re.findall(r".*sharedStrings.xml", file):
                     tree = ET.parse(file)
                     root = tree.getroot()
                     clean_sst_strings = []
@@ -1719,14 +1719,13 @@ class OOXMLParser:
                         helpers.add_summary_if_no_duplicates(print_line, emb_ole_tag_data)
                     #file_handle.close()
 
-                elif ".xml" not in file and ".bin" not in file:
+                elif not re.findall(r".*\.xml", file) and not re.findall(r".*\.bin", file) and not re.findall(r".*\.xml\.rels", file):
                     ms_ole = OLEParser(file_data)
                     self.parse_ole_file(helpers, file_data, file)
                     ms_ole.extract_embedded_ole(helpers, file, file)
 
                 else:
-                    print_string = "Suspicios file seen."
-                    helpers.add_summary_if_no_duplicates(print_string, str(file_handle.name))
+                    continue
 
             file_handle.close()
 
@@ -1783,8 +1782,8 @@ class OOXMLParser:
         else:
             pass
 
-    def parse_ole_file(self, helpers, data, filename):
-        ms_ole = OLEParser(data)
+    def parse_ole_file(self, helpers, filename, ms_ole):
+        #ms_ole = OLEParser(data)
         ms_ole.extract_embedded_ole(helpers, filename, filename)
 
     def detect_eqedit32(self, helpers, data):
@@ -1811,8 +1810,9 @@ class OOXMLParser:
             for file in files:
                 if ".bin" in file:
                     file_data = open(file, "rb").read()
+                    ms_ole = OLEParser(file_data)
                     activex_ole_files.append(file)
-                    self.parse_ole_file(helpers, file_data, file)
+                    self.parse_ole_file(helpers, file, ms_ole)
 
             if activex_ole_files:
                 summary_string = "ActiveX objects in file: %s" % filename
