@@ -1647,7 +1647,7 @@ class OOXMLParser:
                 file_data = file_handle.read()
 
                 if ".bin" in file or helpers.OLE_FILE_MAGIC in file_data[:len(helpers.OLE_FILE_MAGIC)]:
-                    ms_ole = OLEParser(data)
+                    ms_ole = OLEParser(file_data)
                     self.parse_ole_file(helpers, file, ms_ole)
                     ms_ole.extract_embedded_ole(helpers, file, file)
                     file_handle.close()
@@ -2916,7 +2916,9 @@ def main():
             # ooxml_ppt.search_slides(filename)
             pass
 
-        ooxml_obj.parse_ole_file(helpers, data, filename)
+        #ms_ole = OLEParser(data)
+        #ooxml_obj.parse_ole_file(helpers, data, filename)
+        #ooxml_obj.parse_ole_file(helpers, data, ms_ole)
         ooxml_obj.detect_activex(helpers, filename)
 
     # If the file is a PDF document
@@ -2946,6 +2948,7 @@ def main():
             try:
                 opened_path = Path(e.filename)
                 opened_path.close()
+                os.remove(e.filename)
                 #f = open(e.filename)
                 #f.close()
                 #os.remove(e.filename)
