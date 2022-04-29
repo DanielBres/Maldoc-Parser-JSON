@@ -25,6 +25,3 @@ sudo pip install -r ./requirements.txt
 
 <img src="./images/pic3.png" alt="" width="1500">
 
-
-<img src="./images/pic1.png" alt="" width="1500">
-
