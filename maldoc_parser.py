@@ -926,10 +926,11 @@ class OLEParser:
             helpers.raw_data += "Saved decrypted document to file: %s\n" % decrypted_outfile
             helpers.raw_data += "Please check the decrypted file, rerun the tool and use the decrypted file\n"
             exit(0)
-        except msoffcrypto.exceptions.InvalidKeyError:
+        except:
             helpers.raw_data += "[-] Could not decrypt protected document - password is not the default...\nRun the document in a sandbox"
             exit(0)
             return
+
 
 
 class XLSParser:
@@ -1151,11 +1152,11 @@ class XLSParser:
         """
 
         # Hex value 0006, indicating BIFF 5/7
-        if biff_version_bytes is b'\x05':
+        if biff_version_bytes == b'\x05':
             bof_table.rows.append(["BIFF version", "5/7"])
 
         # Hex value 0006, indicating BIFF8
-        elif biff_version_bytes is b'\x06':
+        elif biff_version_bytes == b'\x06':
             bof_table.rows.append(["BIFF version", "8"])
 
     def check_xlm_flag_in_bof(self, helpers, xlm_bytes, bof_table):
@@ -1167,7 +1168,7 @@ class XLSParser:
 
         """
         # Hex value 0x40, indicating the sheet contains XLM 4 macros.
-        if xlm_bytes is 0x40:
+        if xlm_bytes == 0x40:
             self.xlm_flag = True
 
             # Prepare to add row to bof table.
@@ -1179,11 +1180,11 @@ class XLSParser:
             helpers.add_summary_if_no_duplicates(print_string, "XLM 4.0 macros found in sheets")
 
         # Add to table just for full parsing.
-        elif xlm_bytes is 0x05:
+        elif xlm_bytes == 0x05:
             bof_table.rows.append(["XLM Macros", "(0x05) BOF record for mandatory Workbook Globals Substream"])
 
         # Add to table just for full parsing.
-        elif xlm_bytes is 0x10:
+        elif xlm_bytes == 0x10:
             bof_table.rows.append(["XLM Macros", "(0x10) BOF record is a WorkSheet"])
 
     def carve_sheet_name(self, helpers, data, raw_record):
@@ -1244,7 +1245,7 @@ class XLSParser:
         i = 0
 
         for record in boundsheet_records:
-            if record[3] is b"\x00" or (record[9] is b"\x00" or record[9] is b"\x01"):
+            if record[3] == b"\x00" or (record[9] == b"\x00" or record[9] == b"\x01"):
                 continue
             else:
                 # get sheet name
@@ -1396,7 +1397,7 @@ class XLSParser:
                     for col in range(book.sheet_by_index(i).ncols):
                         cell_obj = book.sheet_by_index(i).cell(row, col)
 
-                        if cell_obj.value is '':
+                        if cell_obj.value == '':
                             continue
                         else:
                             helpers.raw_data += str(cell_obj.value)
@@ -1455,7 +1456,7 @@ class XLSParser:
 
             loc = data.find(record)
 
-            if record[len(record) - 2] is not 0:
+            if record[len(record) - 2] != 0:
 
                 xls_file.seek(loc + 8)
                 sheet_name = self.carve_sheet_name(helpers, data, record)
@@ -1922,7 +1923,7 @@ class OOXML_Excel(OOXMLParser):
         if "sheetData" in child.tag:
             for attrib in child:
                 for val in attrib:
-                    y = filter(lambda v: v.text is not "0", val)
+                    y = filter(lambda v: v.text != "0", val)
                     for x in list(y):
                         sheet_cells.rows.append([val.attrib.get("r"), x.text])
                         helpers.search_indicators_in_string(helpers, filename, x.text)
@@ -2091,7 +2092,7 @@ class RTF:
             # Handle each object in the list.
             for obj in ole_blobs:
                 # Verify if object has meaningful data/not empty.
-                if obj is not b'' and len(obj) > 200:
+                if obj != b'' and len(obj) > 200:
                     try:
                         # Unhexlify object data ("01" --> b'\x01') and convert all to uppercase.
                         obj_data = binascii.unhexlify(obj.upper())
@@ -2327,7 +2328,6 @@ class PDF:
     PDF() class will parse the PDF document file data and analyze each object separately.
     It will print a object table showing all the PDF objects and their types.
     Run multiple checks for common PDF weaponizing vectors.
-
     """
 
     def __init__(self, data):
@@ -2499,7 +2499,7 @@ class PDF:
                         # the RTF document.
                         if mimetype == 'rtf':
                             rtf = RTF()
-                            summary_string = "Embedded document@"
+                            summary_string = "Embedded document"
                             summary_desc = "Found RTF document"
                             helpers.add_summary_if_no_duplicates(summary_string, summary_desc)
                             clean = rtf.clean_hex_data(helpers, decompressed)
@@ -2507,7 +2507,7 @@ class PDF:
 
                         # If decompression succeeded and the file is OLE, initiate the OLEParser class for inline
                         # analysis of the OLE file.
-                        elif mimetype is 'ole':
+                        elif mimetype == 'ole':
                             ms_ole = OLEParser(data)
                             with open("ole_temp.bin", "ab") as f:
                                 f.write(decompressed)
@@ -2528,7 +2528,7 @@ class PDF:
 
                     # If decompression succeeded and the file is OLE, initiate the OLEParser class for inline
                     # analysis of the OLE file.
-                    elif mimetype is 'ole':
+                    elif mimetype == 'ole':
                         ms_ole = OLEParser(data)
                         f = open("ole_temp.bin", "ab")
                         f.write(decompressed)
@@ -2550,7 +2550,7 @@ class PDF:
 
                     # If decompression succeeded and the file is OLE, initiate the OLEParser class for inline
                     # analysis of the OLE file.
-                    elif mimetype is 'ole':
+                    elif mimetype == 'ole':
                         ms_ole = OLEParser(data)
                         f = open("ole_temp.bin", "r+b")
                         f.write(decompressed)
@@ -2734,7 +2734,7 @@ class PDF:
         aa_regex = re.compile(helpers.auto_action_pattern)
         for match in re.finditer(aa_regex, data):
             helpers.raw_data += "\n[!] Found \"/Launch\" in object %s\n" % obj_num_bin
-            helpers.raw_data += match
+            helpers.raw_data += str(match.string)
             helpers.raw_data += "\n"
 
     def find_goto_ref(self, helpers, data, obj_num_bin):
@@ -2802,7 +2802,6 @@ class PDF:
                             # Search any OLE files and binary blobs in the "cleaned" hex data.
                             rtf.search_ole_obj(helpers, clean)
                         break
-
 
 class DocParser:
 
