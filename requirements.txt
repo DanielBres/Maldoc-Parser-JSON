@@ -1,0 +1,5 @@
+xlrd~=2.0.1
+hexdump~=3.3
+olefile~=0.46
+beautifultable~=1.0.1
+pyxlsb~=1.0.9
