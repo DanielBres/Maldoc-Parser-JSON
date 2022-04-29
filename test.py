@@ -11,28 +11,41 @@ import glob
 import subprocess
 
 
-def list_archive_files(path=[REPORTS_OUT_DIR]", my_os="Windows"):
+def list_archive_files(path="/home/remnux/Maldoc-Parser-JSON/samples", my_os="Linux"):
     files = None
-
+    
     if my_os == "Windows":
         files = glob.glob(path + "\\*.*")
+    
     if my_os == "Linux":
         files = glob.glob(path + "/*.*")
     samples = list(dict.fromkeys(files))
-
-    return samples
+    return my_os, samples
 
 
 def main():
-    samples = list_archive_files()
-    reports_path="[REPORTS_OUT_DIR]"
+    my_os, samples = list_archive_files()
+    reports_path = "./reports"
 
     for sample in samples:
         head, tail = os.path.split(sample)
-        outfile = "%s\\%s.json" % (reports_path, tail)
+        outfile = "%s/%s.json" % (reports_path, tail)
+        
         with open(outfile, "w") as out:
-            batch = "python maldoc_parser_unified.py \"%s\"" % sample
-            subprocess.call(batch, stdout=out)
+            
+            if my_os == "Windows":
+                batch = "python maldoc_parser_unified.py \"%s\"" % sample
+                subprocess.call(batch, stdout=out)
+            
+            if my_os == "Linux":
+                #argv1 = "maldoc_parser_unified.py"
+                #argv2 = "\"%s\"" % sample
+                #subprocess.run(["python", argv1, argv2], stdout=out)
+                batch = "/usr/bin/python3.8"
+                script = "maldoc_parser.py"
+                maldoc = "%s" % sample
+                subprocess.run([batch, script, maldoc], stdout=out)
+        
         out.close()
 
 
