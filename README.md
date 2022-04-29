@@ -4,3 +4,21 @@ A version of Maldoc-Parser that outputs analysis to a JSON report.
 All Python classes and files were unified into one file.
 
 <img src="./images/json_ext_reference.png" alt="" width="1500">
+
+
+
+### Installation:
+```bash
+cd /opt
+git clone 
+cd ./Maldoc-Parser-JSON
+pip install -r ./requirements.txt
+
+```
+
+### requirements:
+Tested on Remnux (Ubuntu).
+Pythoin 3.x
+
+
+###*This is a work in progress!***
