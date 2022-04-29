@@ -17,8 +17,8 @@ sudo pip install -r ./requirements.txt
 ```
 
 ### requirements:
-Tested on Remnux (Ubuntu).
-Pythoin 3.x
+- Tested on Remnux (Ubuntu).
+- Pythoin 3.x
 
 
 ### ***This is a work in progress!***
