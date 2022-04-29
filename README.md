@@ -10,9 +10,9 @@ All Python classes and files were unified into one file.
 ### Installation:
 ```bash
 cd /opt
-git clone 
+sudo git clone https://github.com/DanielBres/Maldoc-Parser-JSON.git
 cd ./Maldoc-Parser-JSON
-pip install -r ./requirements.txt
+sudo pip install -r ./requirements.txt
 
 ```
 
