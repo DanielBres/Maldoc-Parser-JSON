@@ -1,11 +1,7 @@
 # Maldoc-Parser-JSON
-A version of Maldoc-Parser that outputs analysis to a JSON report.
 
-All Python classes and files were unified into one file.
-
-<img src="./images/ppt.png" alt="" width="1500">
-
-
+- A version of Maldoc-Parser that outputs analysis to a JSON report.
+- All Python classes and files were unified into one file.
 
 ### Installation:
 ```bash
@@ -22,3 +18,15 @@ sudo pip install -r ./requirements.txt
 
 
 ### ***This is a work in progress!***
+
+
+<img src="./images/ppt.png" alt="" width="1500">
+
+
+<img src="./images/ppt.png" alt="" width="1500">
+
+
+<img src="./images/ppt.png" alt="" width="1500">
+
+
+<img src="./images/ppt.png" alt="" width="1500">
