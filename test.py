@@ -11,7 +11,7 @@ import glob
 import subprocess
 
 
-def list_archive_files(path="/home/remnux/Maldoc-Parser-JSON/samples", my_os="Linux"):
+def list_archive_files(path="[SAMPLES_DIR]", my_os="Linux"):
     files = None
     
     if my_os == "Windows":
